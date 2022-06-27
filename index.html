@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title> Event Calendar View </title>
+    <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="dist/simple-calendar.css" />
+    <link rel="stylesheet" href="assets/demo.css" />
+    <style>
+        select {
+            width: 19%;
+            height: 24%;
+            padding: 5px;
+        }
+        
+        .divSelect {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <h1 class="title">Event Calendar View</h1>
+
+    <div class="divSelect">
+        <select title="venues" name="venues" id="venues">
+            <option value="0">Select Venue</option>
+      </select>
+    </div>
+    <div id="container" class="calendar-container"></div>
+
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+    <script src="dist/jquery.simple-calendar.js"></script>
+    <script>
+        var $calendar;
+        let _filteredData = [];
+        let _jsonData = [];
+        _venuesArray = [];
+
+        $(document).ready(function() {
+            getData();
+
+            $('select').on('change', function() {
+                _filteredData = _jsonData.events.filter(x => x.venueId == this.value);
+                $('#container').remove();
+                $('body').append('<div id="container" class="calendar-container"></div>');
+                CreateCalander();
+            });
+        });
+
+        function CreateCitiesList() {
+            _venuesArray.forEach(element => {
+                $('#venues').append($('<option>', {
+                    value: element.id,
+                    text: element.name
+                }));
+            });
+        }
+
+        function getData() {
+            var xhr = new XMLHttpRequest();
+            var url = "https://localhost:7203/Events";
+
+            xhr.open("GET", url, true);
+            xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
+            xhr.setRequestHeader("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT");
+            xhr.setRequestHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, x - client - key, x - client - token, x - client - secret, Authorization ");
+            xhr.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    _jsonData = JSON.parse(this.responseText);
+                    _filteredData = _jsonData.events;
+                    _venuesArray = _jsonData.venues;
+                    CreateCitiesList();
+                    $('#container').remove();
+                    $('body').append('<div id="container" class="calendar-container"></div>');
+                }
+
+                CreateCalander();
+
+            };
+            xhr.send();
+        }
+
+        function CreateCalander() {
+            let container = $("#container").simpleCalendar({
+                fixedStartDay: 1,
+                disableEmptyDetails: true,
+                events: CreateEvents()
+            });
+
+            $calendar = container.data("plugin_simpleCalendar");
+        }
+
+        function CreateEvents() {
+            debugger;
+            let calendarArray = [];
+
+            if (_filteredData == undefined) {
+                return calendarArray;
+            }
+
+            _filteredData.forEach(eventObj => {
+                var _venue = _venuesArray.filter(x => x.id == eventObj.venueId)[0];
+                calendarArray.push({
+                    startDate: new Date(eventObj.startDate),
+                    endDate: new Date(eventObj.startDate).getTime(),
+                    summary: eventObj.name +
+                        "<br> Venue: " + (_venue != null && _venue != undefined ? _venue.name : "N/A") +
+                        "<br>" + (eventObj.description != undefined ? "Desciption: <small>" + eventObj.description + "</small>" : ""),
+                })
+            });
+
+            return calendarArray;
+        }
+    </script>
+</body>
+
+</html>
